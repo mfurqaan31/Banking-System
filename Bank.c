@@ -1,4 +1,4 @@
-// correct version 11
+// correct version 10
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,7 +37,6 @@ void checkBalance(const char* username);
 void transferMoney(const char* username);
 void displayloginboard(const char* username);
 void createAccount();
-int isUsernameExists(const char* username);
 void login();
 void loginsu();
 void accountCreated();
@@ -92,48 +91,13 @@ int main()
     getch();
 }
 
-int isUsernameExists(const char* username) 
-{
-    FILE* file = fopen("user_data.txt", "r");
-    if (file == NULL) 
-        return 0; 
-    
-    char line[100];
-
-    while (fgets(line, sizeof(line), file) != NULL) 
-    {
-        if (strstr(line, "Username: ") == line) 
-        {
-            char existingUsername[50];
-            sscanf(line, "Username: %s", existingUsername);
-            if (strcmp(existingUsername, username) == 0) 
-            {
-                fclose(file);
-                return 1; 
-            }
-        }
-    }
-
-    fclose(file);
-    return 0;
-}
-
 void createAccount() 
 {
     struct UserData* newUser = (struct UserData*)malloc(sizeof(struct UserData));
 
     printf("\n\n!!!!!CREATE ACCOUNT!!!!!\n");
-    do 
-    {
-        printf("\nUSERNAME (50 CHARACTERS MAX): ");
-        scanf("%s", newUser->username);
-
-        if (isUsernameExists(newUser->username)) 
-            printf("Username already exists. Please choose a different one.\n");
-        
-    } 
-    while (isUsernameExists(newUser->username));
-
+    printf("\nFIRST NAME: ");
+    scanf("%s", newUser->firstName);
     printf("\nLAST NAME: ");
     scanf("%s", newUser->lastName);
     printf("\nFATHER's NAME: ");
