@@ -1,4 +1,4 @@
-// correct version 12.1
+// correct version 15
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,10 +10,10 @@ struct UserData
 {
     char username[50];
     char password[50];
-    char firstName[20];
-    char lastName[20];
-    char fatherName[20];
-    char motherName[20];
+    char firstName[50];
+    char lastName[50];
+    char fatherName[50];
+    char motherName[50];
     char address[50];
     char accountType[20];
     int dateOfBirth;
@@ -61,9 +61,9 @@ int main()
 {
     loadUserDataFromFile();
     int choice;
-
+    printf("\n\n**********************************\n\n");
     printf("WELCOME TO Reshma Global Banking\n\n");
-    printf("**********************************\n");
+    printf("**********************************\n\n");
     printf("1. CREATE A BANK ACCOUNT\n");
     printf("2. ALREADY A USER? SIGN IN\n");
     printf("3. EXIT\n\n");
@@ -73,9 +73,7 @@ int main()
     switch (choice) 
     {
         case 1:
-            system("cls");
-            printf("\n\n USERNAME 50 CHARACTERS MAX!!");
-            printf("\n\n PASSWORD 50 CHARACTERS MAX!!");
+            printf("\n\nUSERNAME and PASSWORD, 50 characters max!");
             createAccount();
             break;
         case 2:
@@ -122,7 +120,7 @@ void createAccount()
 {
     struct UserData* newUser = (struct UserData*)malloc(sizeof(struct UserData));
 
-    printf("\n\n!!!!!CREATE ACCOUNT!!!!!\n");
+    printf("\n\nENTER DETAILS TO CREATE YOUR ACCOUNT!!!!!\n");
     printf("\nFIRST NAME: ");
     scanf("%s", newUser->firstName);
     printf("\nLAST NAME: ");
@@ -542,11 +540,8 @@ void loadUserDataFromFile()
 {
     FILE* file = fopen("user_data.txt", "r");
     if (file == NULL) 
-    {
-        printf("Error: Could not open the file for reading.\n");
         return;
-    }
-
+    
     struct UserData* newUser = NULL;
     char line[100];
 
@@ -718,6 +713,13 @@ void TransactionHistory(const char* username, long int amount, const char* trans
     int money;
     snprintf(transactionDetails, sizeof(transactionDetails), "%s%ld ", transactionType, amount);
     money=atoi(transactionDetails); 
+
+    char senderName[50];
+    char receiverName[50];
+
+    
+
+    
     
     if(strcmp(username,touser)==0)
     {
@@ -737,15 +739,38 @@ void TransactionHistory(const char* username, long int amount, const char* trans
 
     if(strcmp(username,touser)!=0)
     {
+        struct UserData* currentUser = userList;
+        while (currentUser != NULL) 
+    {
+        if (strcmp(currentUser->username, username) == 0) 
+        {
+            strncpy(senderName, currentUser->firstName, sizeof(senderName));
+            break;
+        }
+        currentUser = currentUser->next;
+    }
+
+    struct UserData* currentUser2 = userList;
+
+    while (currentUser != NULL) 
+    {
+        if (strcmp(currentUser2->username, touser) == 0) 
+        {
+            strncpy(receiverName, currentUser2->firstName, sizeof(receiverName));
+            break;
+        }
+        currentUser2 = currentUser2->next;
+    }
+
         if(money<0)
         {
-            fprintf(transactionFile, "%s:\nTransferred money %d to username %s\n\n", username, -money, touser);
+            fprintf(transactionFile, "%s:\nTransferred money %d to %s (username %s)\n\n", username, -money,receiverName, touser);
             fclose(transactionFile);
         }
 
         if(money>0)
         {
-            fprintf(transactionFile, "%s:\nReceived money %d from username %s\n\n", username, money, touser);
+            fprintf(transactionFile, "%s:\nReceived money %d from %s (username %s)\n\n", username, money,receiverName, touser);
             fclose(transactionFile);
         }
     }
@@ -778,7 +803,7 @@ void ViewTransaction(const char* username)
         }
         if (found) 
         {
-            printf("%s", line);
+            printf("%s \n", line);
             found = 0;
         }
     }
