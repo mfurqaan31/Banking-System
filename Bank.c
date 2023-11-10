@@ -1,4 +1,4 @@
-// correct version 15
+// correct version 13
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,10 +10,10 @@ struct UserData
 {
     char username[50];
     char password[50];
-    char firstName[50];
-    char lastName[50];
-    char fatherName[50];
-    char motherName[50];
+    char firstName[20];
+    char lastName[20];
+    char fatherName[20];
+    char motherName[20];
     char address[50];
     char accountType[20];
     int dateOfBirth;
@@ -92,19 +92,19 @@ int main()
 
 int isUsernameExists(const char* username) 
 {
-    FILE* file = fopen("user_data.txt", "r");
-    if (file == NULL) 
+    FILE* file=fopen("user_data.txt", "r");
+    if (file==NULL) 
         return 0; 
     
     char line[100];
 
-    while (fgets(line, sizeof(line), file) != NULL) 
+    while (fgets(line,sizeof(line),file)!=NULL) 
     {
-        if (strstr(line, "Username: ") == line) 
+        if (strstr(line, "Username: ")==line) 
         {
             char existingUsername[50];
             sscanf(line, "Username: %s", existingUsername);
-            if (strcmp(existingUsername, username) == 0) 
+            if (strcmp(existingUsername, username)==0) 
             {
                 fclose(file);
                 return 1; 
@@ -118,7 +118,7 @@ int isUsernameExists(const char* username)
 
 void createAccount() 
 {
-    struct UserData* newUser = (struct UserData*)malloc(sizeof(struct UserData));
+    struct UserData* newUser=(struct UserData*)malloc(sizeof(struct UserData));
 
     printf("\n\nENTER DETAILS TO CREATE YOUR ACCOUNT!!!!!\n");
     printf("\nFIRST NAME: ");
@@ -155,9 +155,9 @@ void createAccount()
     printf("\nPASSWORD: ");
     scanf("%s", newUser->password);
 
-    newUser->accountBalance = 0;
-    newUser->next = userList;
-    userList = newUser;
+    newUser->accountBalance=0;
+    newUser->next=userList;
+    userList=newUser;
 
     saveUserDataToFile(newUser);
 
@@ -166,9 +166,9 @@ void createAccount()
 
 void saveUserDataToFile(const struct UserData* user) 
 {
-    FILE* file = fopen("user_data.txt", "a");
+    FILE* file=fopen("user_data.txt", "a");
         
-    if (file == NULL) 
+    if (file==NULL) 
     {
         printf("Error: Could not open the file for writing.\n");
         return;
@@ -205,7 +205,7 @@ void printUserDataFromFile(const char* username)
 
     while (fgets(line, sizeof(line), file) != NULL) 
     {
-        if (strstr(line, "Username: ") == line && strstr(line, username) != NULL) 
+        if (strstr(line, "Username: ")==line && strstr(line, username) != NULL) 
         {
             printf("%s", line);
             for (int i = 0; i < 10; i++) 
@@ -716,10 +716,6 @@ void TransactionHistory(const char* username, long int amount, const char* trans
 
     char senderName[50];
     char receiverName[50];
-
-    
-
-    
     
     if(strcmp(username,touser)==0)
     {
