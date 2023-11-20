@@ -1,5 +1,4 @@
-// correct version 13 texxt file working
-// add admin here not added
+// correct version 15 added admin viewuserdetails:
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,6 +50,9 @@ void withdrawMoney(const char* username);
 void TransactionHistory(const char* username, long int amount, const char* transactionType, const char* touser);
 void ViewTransaction(const char* username);
 void Displayuserdata(const char* username);
+void adminlogin();
+void adminloginboard();
+void viewallusers();
 
 // Global linked list for user data
 struct UserData* userList = NULL;
@@ -58,6 +60,7 @@ struct UserData* userList = NULL;
 // Global linked list for money transfer data
 struct MoneyTransfer* transferList = NULL;
 
+struct BankAdmin* userViewList = NULL;
 int main() 
 {
     loadUserDataFromFile();
@@ -67,7 +70,8 @@ int main()
     printf("**********************************\n\n");
     printf("1. CREATE A BANK ACCOUNT\n");
     printf("2. ALREADY A USER? SIGN IN\n");
-    printf("3. EXIT\n\n");
+    printf("3. ADMIN LOGIN\n");  // Option added for admin login
+    printf("4. EXIT\n\n");
     printf("ENTER YOUR CHOICE: ");
     scanf("%d", &choice);
 
@@ -80,7 +84,10 @@ int main()
         case 2:
             login();
             break;
-        case 3:
+         case 3:
+            adminlogin();  // Added option for admin login
+            break;
+        case 4:
             exit(0);
         default:
             printf("Invalid choice.\n");
@@ -809,4 +816,143 @@ void ViewTransaction(const char* username)
     printf("Press Enter key to continue...\n");
     getch();
     displayloginboard(username);
+}
+
+void adminlogin() 
+{
+    char adminUsername[50];
+    char adminPassword[50];
+
+    printf("\nADMIN LOGIN\n");
+    printf("USERNAME: ");
+    scanf("%s", adminUsername);
+    printf("PASSWORD: ");
+    
+    char ch;
+    int passwordLength = 0;
+
+    while (1) 
+    {
+        ch = getch();
+        if (ch != 13) 
+        {
+            adminPassword[passwordLength] = ch;
+            ch = '*';
+            printf("%c", ch);
+            passwordLength++;
+        } 
+        else 
+        {
+            break;
+        }
+    }
+    adminPassword[passwordLength] = '\0';
+
+    // Check if admin credentials are correct
+    if (strcmp(adminUsername, "admin") == 0 && strcmp(adminPassword, "admin123") == 0) 
+    {
+        adminloginboard();  // Call admin loginboard if credentials are correct
+    } 
+    else 
+    {
+        printf("\nLogin failed. Invalid admin username or password.\n");
+    }
+}
+
+void adminloginboard() 
+{
+    int adminChoice;
+
+    do 
+    {
+        printf("\nADMIN DASHBOARD\n");
+        printf("1. LOGOUT\n");
+        printf("2. VIEW ALL USERS\n"); // Added option to view all users
+        printf("3. EXIT\n");
+        printf("ENTER YOUR CHOICE: ");
+        scanf("%d", &adminChoice);
+        printf("\n");
+        switch (adminChoice) 
+        {
+            case 1:
+                printf("Logging out...\n");
+                // Simulate a delay
+                for (int i = 0; i < 700000000; i++) 
+                {
+                    i++;
+                    i--;
+                }
+                printf("Logged out successfully.\n");
+
+                break;
+
+            case 2:
+                viewallusers(); // Call the viewallusers function
+                break;
+
+            case 3:
+                exit(0);
+            
+            default:
+                printf("Invalid choice.\n");
+                break;
+        }
+
+    } while (adminChoice != 1);
+
+    main();  
+}
+
+void viewallusers() 
+{
+    FILE* file = fopen("user_data.txt", "r");
+    if (file == NULL) 
+        return;
+    
+    struct UserData* newUser = NULL;
+    char line[100];
+
+    while (fgets(line, sizeof(line), file) != NULL) 
+    {
+        if (strstr(line, "Username: ") == line) 
+        {
+            newUser = (struct UserData*)malloc(sizeof(struct UserData));
+            sscanf(line, "Username: %s", newUser->username);
+            fgets(line, sizeof(line), file);
+            printf("Username: %s\n",newUser->username);
+            sscanf(line, "Password: %s", newUser->password);
+            fgets(line, sizeof(line), file);
+            sscanf(line, "First Name: %s", newUser->firstName);
+            fgets(line, sizeof(line), file);
+            printf("First name: %s\n",newUser->firstName);
+            sscanf(line, "Last Name: %s", newUser->lastName);
+            fgets(line, sizeof(line), file);
+            sscanf(line, "Father's Name: %s", newUser->fatherName);
+            fgets(line, sizeof(line), file);
+            sscanf(line, "Mother's Name: %s", newUser->motherName);
+            fgets(line, sizeof(line), file);
+            sscanf(line, "Address: %s", newUser->address);
+            fgets(line, sizeof(line), file);
+            sscanf(line, "Account Type: %s", newUser->accountType);
+            fgets(line, sizeof(line), file);
+            sscanf(line, "Date of Birth: %d", &newUser->dateOfBirth);
+            fgets(line, sizeof(line), file);
+            sscanf(line, "Adhar Number: %s", newUser->adharNumber);
+            fgets(line, sizeof(line), file);
+            sscanf(line, "Phone Number: %s", newUser->phoneNumber);
+            fgets(line, sizeof(line), file);
+            sscanf(line, "Account Balance: %ld", &newUser->accountBalance);
+            struct UserData* currentUser = userList;
+            long int balance = 0; 
+            balance=newUser->accountBalance;
+            printf("Total Balance: %ld\n\n", balance);
+            newUser->next = userList;
+            userList = newUser;
+        }
+    }
+
+    fclose(file);
+    printf("Press Enter key to continue...\n");
+    getch();
+    adminloginboard();
 }
