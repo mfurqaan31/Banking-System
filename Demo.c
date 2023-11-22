@@ -1,4 +1,4 @@
-// correct version 15 added admin viewuserdetails:
+// correct version 15 added admin viewuserdetails: and also the loan money to txt file.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -53,6 +53,7 @@ void Displayuserdata(const char* username);
 void adminlogin();
 void adminloginboard();
 void viewallusers();
+void applyForLoan(const char* username);
 
 // Global linked list for user data
 struct UserData* userList = NULL;
@@ -162,6 +163,18 @@ void createAccount()
 
     printf("\nPASSWORD: ");
     scanf("%s", newUser->password);
+     FILE* loanFile = fopen("loan_data.txt", "a");
+    if (loanFile == NULL) 
+    {
+        printf("Error: Could not open the loan data file for writing.\n");
+        return;
+    }
+
+    fprintf(loanFile, "Username: %s\n", newUser->username);
+    fprintf(loanFile, "Loan: 0\n");
+    fprintf(loanFile, "Permission: -\n");
+    fprintf(loanFile, "Amount: 0\n\n");
+    fclose(loanFile);
 
     newUser->accountBalance=0;
     newUser->next=userList;
@@ -343,14 +356,14 @@ void displayloginboard(const char* username)
     printf("4. WITHDRAW MONEY\n");
     printf("5. TRANSFER MONEY\n"); 
     printf("6. TRANSACTION DETAILS\n");
-    printf("7. LOG OUT\n");
-    printf("8. EXIT\n");
+    printf("7. APPLY FOR LOAN\n"); // Added option for loan application
+    printf("8. LOG OUT\n");
+    printf("9. EXIT\n");
     printf("ENTER YOUR CHOICE=");
     scanf("%d", &choice);
     printf("\n");
 
-    switch (choice) 
-    {
+    switch (choice) {
         case 1:
             Displayuserdata(username);
             break;
@@ -370,10 +383,13 @@ void displayloginboard(const char* username)
             ViewTransaction(username);
             break;
         case 7:
+            applyForLoan(username);
+            break;
+        case 8:
             logout();
             main();
             break;
-        case 8:
+        case 9:
             exit(0);
         default:
             printf("Invalid choice.\n");
@@ -955,4 +971,77 @@ void viewallusers()
     printf("Press Enter key to continue...\n");
     getch();
     adminloginboard();
+}
+
+void applyForLoan(const char* username) {
+    FILE* loanFile = fopen("loan_data.txt", "r");
+    FILE* tempFile = fopen("temp_loan_data.txt", "w");
+
+    if (loanFile == NULL || tempFile == NULL) {
+        printf("Error: Could not open the loan data files.\n");
+        return;
+    }
+
+    char line[100];
+    int userFound = 0;
+
+    // Process each line in the loan data file
+    while (fgets(line, sizeof(line), loanFile) != NULL) {
+        // Check if the line contains the username
+        if (strstr(line, "Username:") != NULL && strstr(line, username) != NULL) {
+            userFound = 1;
+
+            // Update the loan details for the current user
+            fprintf(tempFile, "Username: %s\n", username);
+            fprintf(tempFile, "Loan: ");
+
+            // Read the existing loan amount and add the new loan amount
+            long int currentLoan;
+            fscanf(loanFile, "%*s %ld", &currentLoan);
+
+            if (currentLoan > 0) {
+                printf("Loan already applied. Cannot apply for a new loan.\n");
+                fclose(loanFile);
+                fclose(tempFile);
+                remove("temp_loan_data.txt");
+                return;
+            }
+
+            long int loanAmount;
+            printf("Enter loan amount: ");
+            scanf("%ld", &loanAmount);
+
+            if (loanAmount <= 0) {
+                printf("Invalid loan amount.\n");
+                fclose(loanFile);
+                fclose(tempFile);
+                remove("temp_loan_data.txt");
+                return;
+            }
+
+            fprintf(tempFile, "%ld", loanAmount);
+            continue;  // Skip the remaining lines for the current user in the original file
+        } else {
+            // Copy details for other users without modification
+            fprintf(tempFile, "%s", line);
+        }
+    }
+
+    fclose(loanFile);
+
+    if (!userFound) {
+        printf("User not found in the loan data file.\n");
+        fclose(tempFile);
+        remove("temp_loan_data.txt");
+        return;
+    }
+
+    // Close the temp file
+    fclose(tempFile);
+
+    // Remove the existing loan data file and rename the temp file
+    remove("loan_data.txt");
+    rename("temp_loan_data.txt", "loan_data.txt");
+
+    printf("Loan applied successfully. Waiting for approval from admin.\n");
 }
