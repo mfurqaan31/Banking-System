@@ -1,4 +1,4 @@
-// correct version 15 added admin viewuserdetails: and also the loan money to txt file.
+// Version 20
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,16 +23,17 @@ struct UserData
     struct UserData* next;
 };
 
-// Structure to store money transfer data
-struct MoneyTransfer 
+// Structure to store loan details
+struct loan
 {
-    char fromUser[50];
-    char toUser[50];
+    char user[50];
+    long int loan;
+    char permissions[50];
     long int amount;
-    struct MoneyTransfer* next;
+    struct loan* next;
 };
 
-// Function prototypes
+// All Functions
 void checkBalance(const char* username);
 void transferMoney(const char* username);
 void displayloginboard(const char* username);
@@ -54,14 +55,16 @@ void adminlogin();
 void adminloginboard();
 void viewallusers();
 void applyForLoan(const char* username);
+void approveloan();
+void addloanMoney(const char* username, long int amt);
+void resetLoan(const char* username);
 
 // Global linked list for user data
 struct UserData* userList = NULL;
 
-// Global linked list for money transfer data
-struct MoneyTransfer* transferList = NULL;
+// Global linked list for Loan data
+struct loan* userViewList = NULL;
 
-struct BankAdmin* userViewList = NULL;
 int main() 
 {
     loadUserDataFromFile();
@@ -71,7 +74,7 @@ int main()
     printf("**********************************\n\n");
     printf("1. CREATE A BANK ACCOUNT\n");
     printf("2. ALREADY A USER? SIGN IN\n");
-    printf("3. ADMIN LOGIN\n");  // Option added for admin login
+    printf("3. ADMIN LOGIN\n");
     printf("4. EXIT\n\n");
     printf("ENTER YOUR CHOICE: ");
     scanf("%d", &choice);
@@ -86,7 +89,7 @@ int main()
             login();
             break;
          case 3:
-            adminlogin();  // Added option for admin login
+            adminlogin();
             break;
         case 4:
             exit(0);
@@ -128,7 +131,6 @@ int isUsernameExists(const char* username)
 void createAccount() 
 {
     struct UserData* newUser=(struct UserData*)malloc(sizeof(struct UserData));
-
     printf("\n\nENTER DETAILS TO CREATE YOUR ACCOUNT!!!!!\n");
     printf("\nFIRST NAME: ");
     scanf("%s", newUser->firstName);
@@ -148,26 +150,23 @@ void createAccount()
     scanf("%s", newUser->adharNumber);
     printf("\nPHONE NUMBER: ");
     scanf("%s", newUser->phoneNumber);
-    
-    do 
+    do
     {
         printf("\nUSERNAME (50 CHARACTERS MAX): ");
         scanf("%s", newUser->username);
 
         if (isUsernameExists(newUser->username)) 
-            printf("Username already exists. Please choose a different one.\n");
-        
-    } 
+            printf("Username already exists. Please choose a different one.\n"); 
+    }
+
     while (isUsernameExists(newUser->username));
-
-
     printf("\nPASSWORD: ");
     scanf("%s", newUser->password);
-     FILE* loanFile = fopen("loan_data.txt", "a");
+    FILE* loanFile = fopen("loan_data.txt", "a");
     if (loanFile == NULL) 
     {
-        printf("Error: Could not open the loan data file for writing.\n");
-        return;
+        printf("Error: Could not open the loan data file for writing.\n");  
+        return; 
     }
 
     fprintf(loanFile, "Username: %s\n", newUser->username);
@@ -175,13 +174,10 @@ void createAccount()
     fprintf(loanFile, "Permission: -\n");
     fprintf(loanFile, "Amount: 0\n\n");
     fclose(loanFile);
-
     newUser->accountBalance=0;
     newUser->next=userList;
     userList=newUser;
-
     saveUserDataToFile(newUser);
-
     accountCreated();
 }
 
@@ -356,7 +352,7 @@ void displayloginboard(const char* username)
     printf("4. WITHDRAW MONEY\n");
     printf("5. TRANSFER MONEY\n"); 
     printf("6. TRANSACTION DETAILS\n");
-    printf("7. APPLY FOR LOAN\n"); // Added option for loan application
+    printf("7. APPLY FOR LOAN\n");
     printf("8. LOG OUT\n");
     printf("9. EXIT\n");
     printf("ENTER YOUR CHOICE=");
@@ -407,7 +403,6 @@ void checkBalance(const char* username)
     {
         if (strcmp(currentUser->username, username) == 0) 
         {
-            // If the username matches, update the balance
             balance = currentUser->accountBalance;
             break;
         }
@@ -864,10 +859,9 @@ void adminlogin()
     }
     adminPassword[passwordLength] = '\0';
 
-    // Check if admin credentials are correct
     if (strcmp(adminUsername, "admin") == 0 && strcmp(adminPassword, "admin123") == 0) 
     {
-        adminloginboard();  // Call admin loginboard if credentials are correct
+        adminloginboard(); 
     } 
     else 
     {
@@ -883,8 +877,9 @@ void adminloginboard()
     {
         printf("\nADMIN DASHBOARD\n");
         printf("1. LOGOUT\n");
-        printf("2. VIEW ALL USERS\n"); // Added option to view all users
-        printf("3. EXIT\n");
+        printf("2. VIEW ALL USERS\n"); 
+        printf("3. Approve loan\n"); 
+        printf("4. EXIT\n");
         printf("ENTER YOUR CHOICE: ");
         scanf("%d", &adminChoice);
         printf("\n");
@@ -903,10 +898,14 @@ void adminloginboard()
                 break;
 
             case 2:
-                viewallusers(); // Call the viewallusers function
+                viewallusers();
                 break;
 
             case 3:
+            approveloan();
+                break;
+
+            case 4:
                 exit(0);
             
             default:
@@ -973,7 +972,8 @@ void viewallusers()
     adminloginboard();
 }
 
-void applyForLoan(const char* username) {
+void applyForLoan(const char* username) 
+{
     FILE* loanFile = fopen("loan_data.txt", "r");
     FILE* tempFile = fopen("temp_loan_data.txt", "w");
 
@@ -985,21 +985,20 @@ void applyForLoan(const char* username) {
     char line[100];
     int userFound = 0;
 
-    // Process each line in the loan data file
-    while (fgets(line, sizeof(line), loanFile) != NULL) {
-        // Check if the line contains the username
-        if (strstr(line, "Username:") != NULL && strstr(line, username) != NULL) {
+    while (fgets(line, sizeof(line), loanFile) != NULL) 
+    {
+        if (strstr(line, "Username:") != NULL && strstr(line, username) != NULL) 
+        {
             userFound = 1;
 
-            // Update the loan details for the current user
             fprintf(tempFile, "Username: %s\n", username);
             fprintf(tempFile, "Loan: ");
 
-            // Read the existing loan amount and add the new loan amount
             long int currentLoan;
             fscanf(loanFile, "%*s %ld", &currentLoan);
 
-            if (currentLoan > 0) {
+            if (currentLoan > 0) 
+            {
                 printf("Loan already applied. Cannot apply for a new loan.\n");
                 fclose(loanFile);
                 fclose(tempFile);
@@ -1020,28 +1019,150 @@ void applyForLoan(const char* username) {
             }
 
             fprintf(tempFile, "%ld", loanAmount);
-            continue;  // Skip the remaining lines for the current user in the original file
-        } else {
-            // Copy details for other users without modification
+            continue;
+        } 
+        else 
+        {
             fprintf(tempFile, "%s", line);
         }
     }
 
     fclose(loanFile);
 
-    if (!userFound) {
+    if (!userFound) 
+    {
         printf("User not found in the loan data file.\n");
         fclose(tempFile);
         remove("temp_loan_data.txt");
         return;
     }
 
-    // Close the temp file
     fclose(tempFile);
 
-    // Remove the existing loan data file and rename the temp file
     remove("loan_data.txt");
     rename("temp_loan_data.txt", "loan_data.txt");
 
     printf("Loan applied successfully. Waiting for approval from admin.\n");
+    printf("Press Enter key to continue...\n");
+    getch();
+    displayloginboard(username);   
+}
+
+
+void approveloan()
+{
+    char ans[10];
+    FILE* file = fopen("loan_data.txt", "r");
+    if (file == NULL) 
+        return;
+    
+    struct loan* newUser = NULL;
+    char line[100];
+
+     while (fgets(line, sizeof(line), file) != NULL) 
+     {
+        if (strstr(line, "Username: ") == line)
+        {
+                newUser = (struct loan*)malloc(sizeof(struct loan));
+                sscanf(line, "Username: %s", newUser->user);
+                fgets(line, sizeof(line), file);
+                sscanf(line, "Loan: %ld", &newUser->loan);
+                if(newUser->loan>0)
+                {
+                    printf("Username %s has applied for Loan do you want to approve\n",newUser->user);
+                    printf("Enter yes or no=");
+                    scanf("%s",ans);
+                    if (strcasecmp(ans, "yes") == 0)
+                    {
+                        long int loanamt=newUser->loan;
+                        addloanMoney(newUser->user,loanamt);
+                        resetLoan(newUser->user);
+                    }
+                    
+                }
+
+                if(newUser->loan==0 || (strcasecmp(ans, "no") == 0) )
+                {
+                    resetLoan(newUser->user);
+                }
+
+                fgets(line, sizeof(line), file);
+                sscanf(line, "Permission: %s", newUser->permissions);
+                fgets(line, sizeof(line), file);
+                sscanf(line, "Amount: %ld", &newUser->amount);
+
+                newUser->next = userViewList;
+                userViewList = newUser;
+        }
+     }
+    fclose(file);
+    remove("loan_data.txt");
+    rename("temp_loan_data.txt", "loan_data.txt");
+
+}
+
+
+void addloanMoney(const char* username, long int amt) 
+{
+    struct UserData* currentUser = userList;
+    FILE* file = fopen("user_data.txt", "r");
+    FILE* tempFile = fopen("temp_user_data.txt", "w");
+
+    if (file == NULL || tempFile == NULL) 
+    {
+        printf("Error: Could not open files for reading/writing.\n");
+        return;
+    }
+
+    int userFound = 0;
+
+    while (currentUser != NULL) 
+    {
+        if (strcmp(currentUser->username, username) == 0) 
+        {
+            currentUser->accountBalance += amt;
+            userFound = 1;
+        }
+
+        fprintf(tempFile, "Username: %s\n", currentUser->username);
+        fprintf(tempFile, "Password: %s\n", currentUser->password);
+        fprintf(tempFile, "First Name: %s\n", currentUser->firstName);
+        fprintf(tempFile, "Last Name: %s\n", currentUser->lastName);
+        fprintf(tempFile, "Father's Name: %s\n", currentUser->fatherName);
+        fprintf(tempFile, "Mother's Name: %s\n", currentUser->motherName);
+        fprintf(tempFile, "Address: %s\n", currentUser->address);
+        fprintf(tempFile, "Account Type: %s\n", currentUser->accountType);
+        fprintf(tempFile, "Date of Birth: %d\n", currentUser->dateOfBirth);
+        fprintf(tempFile, "Adhar Number: %s\n", currentUser->adharNumber);
+        fprintf(tempFile, "Phone Number: %s\n", currentUser->phoneNumber);
+        fprintf(tempFile, "Account Balance: %ld\n", currentUser->accountBalance);
+        fprintf(tempFile, "\n");
+
+        currentUser = currentUser->next;
+    }
+
+    fclose(file);
+    fclose(tempFile);
+    remove("user_data.txt");
+    rename("temp_user_data.txt", "user_data.txt");
+    printf("Loan Amount added successfully.\n");
+    getch();
+    
+}
+
+
+void resetLoan(const char* username) 
+{
+    FILE* loanFile = fopen("temp_loan_data.txt", "a+");
+    if (loanFile == NULL) 
+    {
+        printf("Error: Could not open the loan data file for writing.\n");
+        return;
+    }
+
+    fprintf(loanFile, "Username: %s\n", username);
+    fprintf(loanFile, "Loan: 0\n");
+    fprintf(loanFile, "Permission: -\n");
+    fprintf(loanFile, "Amount: 0\n\n");
+    fclose(loanFile);
 }
